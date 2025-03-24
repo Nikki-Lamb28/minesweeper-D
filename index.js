@@ -1,85 +1,92 @@
-const numRows = 20;
-const numColums = 20;
-const numBomb = 99;
-let flags = 0;
-let living = true;
-const remaningMines = numbBombs - flags;
+document.addEventListener('DOMContentLoaded', () => {
+    const boardSize = 10;
+    const mineCount = 20;
+    const board = document.getElementById('board');
+    const cells = [];
+    let mines = [];
 
-//function gridd() { 
-//const griddd = this.make.tilemap({ width: 200, height: 200, tileWidth: 32, tileHeight: 32});      
-//}
-//event.lisner.click {
-//}
-
-  //const minsA  = Arrayy(numBomb).fill(mine);
-//const mtA  = Array(numColums * numRows - numBomb).fill("empty");
-//const gameA = mtA.contact(minsA).sort(()
-
-class Example extends Phaser.Scene
-{
-    controls;
-
-    preload ()
-    {
-        this.load.setBaseURL('https://cdn.phaserfiles.com/v385');
-        this.load.image('walls_1x2', 'assets/tilemaps/tiles/walls_1x2.png');
+    function initBoard() {
+        for (let i = 0; i < boardSize; i++) {
+            cells[i] = [];
+            for (let j = 0; j < boardSize; j++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.row = i;
+                cell.dataset.col = j;
+                cell.addEventListener('click', () => revealCell(i, j));
+                board.appendChild(cell);
+                cells[i][j] = cell;
+            }
+        }
+        placeMines();
     }
 
-    create ()
-    {
-        // Load a blank map with a 32 x 32 px tile size. This is the base tile size. This means that
-        // tiles in the map will be placed on a 32 x 32 px grid.
-        const map = this.make.tilemap({ width: 200, height: 200, tileWidth: 32, tileHeight: 32 });
-
-        // You can also change the base tile size of map like this:
-        // map.setBaseTileSize(32, 32);
-
-        // Load a 32 x 64 px tileset. This tileset was designed to allow tiles to overlap vertically, so
-        // placing them on a 32 x 32 grid is exactly what we want.
-        const tiles = map.addTilesetImage('walls_1x2', null, 32, 64);
-
-        // Create a layer filled with random trees
-        const layer = map.createBlankLayer('layer1', tiles);
-
-        layer.randomize(0, 0, map.width, map.height, [ 0, 1, 2, 3, 4, 5, 6, 7 ]);
-
-        const cursors = this.input.keyboard.createCursorKeys();
-
-        const controlConfig = {
-            camera: this.cameras.main,
-            left: cursors.left,
-            right: cursors.right,
-            up: cursors.up,
-            down: cursors.down,
-            speed: 0.5
-        };
-
-        this.controls = new Phaser.Cameras.Controls.FixedKeyControl(controlConfig);
-
-        const help = this.add.text(16, 16, 'Arrows to scroll', {
-            fontSize: '18px',
-            padding: { x: 10, y: 5 },
-            backgroundColor: '#000000',
-            fill: '#ffffff'
-        });
-
-        help.setScrollFactor(0);
+    function placeMines() {
+        mines = Array(boardSize).fill().map(() => Array(boardSize).fill(false));
+        let placedMines = 0;
+        while (placedMines < mineCount) {
+            const row = Math.floor(Math.random() * boardSize);
+            const col = Math.floor(Math.random() * boardSize);
+            if (!mines[row][col]) {
+                mines[row][col] = true;
+                placedMines++;
+            }
+        }
     }
 
-    update (time, delta)
-    {
-        this.controls.update(delta);
+    function revealCell(row, col) {
+        const cell = cells[row][col];
+        if (mines[row][col]) {
+            cell.classList.add('mine');
+            alert('Game Over!');
+            revealAllMines();
+        } else {
+            cell.classList.add('revealed');
+            const mineCount = countAdjacentMines(row, col);
+            if (mineCount > 0) {
+                cell.textContent = mineCount;
+            } else {
+                revealAdjacentCells(row, col);
+            }
+        }
     }
-}
 
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    backgroundColor: '#ffffff',
-    parent: 'phaser-example',
-    pixelArt: true,
-    scene: Example
-};
+    function countAdjacentMines(row, col) {
+        let count = 0;
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                const newRow = row + i;
+                const newCol = col + j;
+                if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+                    if (mines[newRow][newCol]) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
 
-const game = new Phaser.Game(config);
+    function revealAdjacentCells(row, col) {
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                const newRow = row + i;
+                const newCol = col + j;
+                if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+                    const cell = cells[newRow][newCol];
+                    if (!cell.classList.contains('revealed') && !cell.classList.contains('mine')) {
+                        revealCell(newRow, newCol);
+                    }
+                }
+            }
+        }
+    }
+
+    function revealAllMines() {
+        for (let i = 0; i < boardSize; i++) {
+            for (let j = 0; j < boardSize; j++) {
+                if (mines[i][j]) {
+                    cells[i][j].classList.add('mine');
+                }
+            }
+        }
